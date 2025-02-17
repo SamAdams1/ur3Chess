@@ -5,7 +5,56 @@ from robotConnection import acc
 
 from robotActions import robotMoveSequence
 from robotActions import board
+import time
 
+import keyboard
+
+def moveRobotWithKeyboard():
+  rtde_c.moveJ([-1.5589281,-1.424189,0.959931, -1.15192,-1.6350244,0], vel, acc)
+
+  '''
+    add to z -> move robot up
+    add to  y -> move down number ~ square 8 -> 1
+    add to x -> move up letter ~ squares h -> a
+  '''
+
+  safeX = 0.1375 
+  safeY = 0.515
+  safeZ = 0.3
+
+  x = -0.13 
+  y = 0.2475
+  z = 0.1
+
+  squareSize = 0.038
+
+  def subtractX():
+    global x
+    x -= squareSize
+  
+  while True:
+    if keyboard.is_pressed("d"):
+      x -= squareSize
+    if keyboard.is_pressed("a"):
+      x += squareSize
+    if keyboard.is_pressed("w"):
+      y -= squareSize
+    if keyboard.is_pressed("s"):
+      y += squareSize
+    if keyboard.is_pressed("r"):
+      z += 0.01
+    if keyboard.is_pressed("f"):
+      z -= 0.01
+    if keyboard.is_pressed("q"):
+      print(rtde_r.getActualTCPPose())
+      time.sleep(0.5)
+      
+
+    rtde_c.moveL([x, y, z, -3.14,0,0], 0.05, 0.05)
+
+# moveRobotWithKeyboard()
+# position of captured-piece zone first square
+# [-0.2059899018024526, 0.24750870339484063, 0.029995525316908814, -3.1400439612972355, 7.955925834299961e-05, -6.1709083089495796e-06]
 
 #  attempt to move robot to home then idle when starting up
 # try:
@@ -50,8 +99,6 @@ def humanInputLoop():
 
         # pushing humans move to board, then giving stockfish the boardstate
         board.push_san(command)
-        # stockfish.set_fen_position(board.fen())
-        # printBoard()
 
         robotMoveSequence()
 
@@ -65,9 +112,14 @@ a8: 0.1375, 0.2475
 h8: -0.13, 0.2475
 h1: -0.13, 0.515
 
+captured pieces zone: (15 zones needed, cant capture king (16-1))
+[["","","","","",],
+["","","","","",],
+["","","","","",]]
+
 add to z -> move robot up
-add to  y -> move down number square 8 -> 1
-add to x -> move up letter squares h -> a
+add to  y -> move down number ~ square 8 -> 1
+add to x -> move up letter ~ squares h -> a
 '''
 
 """

@@ -25,8 +25,8 @@ def robotMoveSequence():
   pickupSquare = bestMove[:2]
   dropSquare = bestMove[2:]
 
-  # need square number not algrbreaic notation
-  if board.piece_at(calcSquareNum(dropSquare)):
+  # checks dropOff square is empty
+  if board.piece_at(utils.chessFuncs.squareToNumber(dropSquare)):
     print("capturing")
     calculateNewPos(dropSquare, 'p') # pickup captured piece
 
@@ -57,8 +57,8 @@ def calculateNewPos(newSquare: list[str], pickupDrop):
   newX = origin[0] - (squareSize * xScale)
   newY = origin[1] - (squareSize * yScale)
 
+  # z height which is above chess piece height
   safeZ = 0.1
-
   rtde_c.moveL([newX, newY, safeZ, -3.14,0,0], vel, acc)
   rtde_c.moveL([newX, newY, 0.03, -3.14,0,0], vel, acc)
 
