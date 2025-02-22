@@ -9,9 +9,12 @@ import time
 
 import keyboard
 
-def moveRobotWithKeyboard():
-  rtde_c.moveJ([-1.5589281,-1.424189,0.959931, -1.15192,-1.6350244,0], vel, acc)
+from robotActions import origin
+squareSizeY = 0.0382
+squareSizeX = 0.0385
 
+def moveRobotWithKeyboard():
+  # rtde_c.moveJ([-1.5589281,-1.424189,0.959931, -1.15192,-1.6350244,0], vel, acc)
   '''
     add to z -> move robot up
     add to  y -> move down number ~ square 8 -> 1
@@ -22,39 +25,70 @@ def moveRobotWithKeyboard():
   safeY = 0.515
   safeZ = 0.3
 
-  x = -0.13 
-  y = 0.2475
-  z = 0.1
+  # x = -0.13 
+  # y = 0.2475
 
-  squareSize = 0.038
+  z = 0.03
+  # z = 0.1
 
-  def subtractX():
-    global x
-    x -= squareSize
   
   while True:
     if keyboard.is_pressed("d"):
-      x -= squareSize
-    if keyboard.is_pressed("a"):
-      x += squareSize
-    if keyboard.is_pressed("w"):
-      y -= squareSize
-    if keyboard.is_pressed("s"):
-      y += squareSize
-    if keyboard.is_pressed("r"):
+      origin[0] -= squareSizeX
+    elif keyboard.is_pressed("a"):
+      origin[0] += squareSizeX
+    elif keyboard.is_pressed("w"):
+      origin[1] -= squareSizeY
+    elif keyboard.is_pressed("s"):
+      origin[1] += squareSizeY
+    elif keyboard.is_pressed("r"):
       z += 0.01
-    if keyboard.is_pressed("f"):
+    elif keyboard.is_pressed("f"):
       z -= 0.01
-    if keyboard.is_pressed("q"):
+    elif keyboard.is_pressed("q"):
       print(rtde_r.getActualTCPPose())
       time.sleep(0.5)
-      
 
-    rtde_c.moveL([x, y, z, -3.14,0,0], 0.05, 0.05)
+    rtde_c.moveL([origin[0], origin[1], z, -3.14,0,0], 0.05, 0.05)
 
 # moveRobotWithKeyboard()
-# position of captured-piece zone first square
-# [-0.2059899018024526, 0.24750870339484063, 0.029995525316908814, -3.1400439612972355, 7.955925834299961e-05, -6.1709083089495796e-06]
+
+def squareSizeCalibrationTest():
+  originCopy = origin
+
+  for i in range(1,8):
+    rtde_c.moveL([origin[0], origin[1], 0.03, -3.14,0,0], 0.05, 0.05)
+    origin[0] -= squareSizeX
+
+  for i in range(1,8):
+    rtde_c.moveL([origin[0], origin[1], 0.03, -3.14,0,0], 0.05, 0.05)
+    origin[1] -= squareSizeY
+    
+
+
+def moveToXPos():
+  while True:
+    origin[0]  = float(input("Enter new X:"))
+
+    # x= 0.1225
+
+    # [0.13750777013424423, 0.5150145677723298, 0.03003519963260068, -3.1399216057739445, -9.682488007800743e-05, -0.0001103704880899726]
+    rtde_c.moveL([x, 0.525, 0.03, -3.14,0,0], 0.05, 0.05)
+
+def moveToYPos():
+  while True:
+    # x = float(input("Enter new X:"))
+    y = float(input("Enter new Y: "))
+
+
+    # [0.13750777013424423, 0.5150145677723298, 0.03003519963260068, -3.1399216057739445, -9.682488007800743e-05, -0.0001103704880899726]
+    rtde_c.moveL([0.1215, y, 0.03, -3.14,0,0], 0.05, 0.05)
+
+# x = 0.1215
+# Y:0.5125
+# moveToYPos()
+# moveToXPos()
+
 
 #  attempt to move robot to home then idle when starting up
 # try:
@@ -103,7 +137,12 @@ def humanInputLoop():
         robotMoveSequence()
 
 
-humanInputLoop()
+def playGame():
+  humanInputLoop()
+
+
+
+playGame()
 
 '''
         x,    y

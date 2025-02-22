@@ -14,6 +14,11 @@ from robotConnection import acc
 
 import utils
 
+#         x,      y
+origin = [0.1215, 0.5125] # square 'a1' center coordinate points
+squareSizeX = 0.0385
+squareSizeY = 0.0382
+
 # called after human moves
 def robotMoveSequence():
   stockfish.set_fen_position(board.fen())
@@ -39,8 +44,6 @@ def robotMoveSequence():
 
 
 
-
-
 def calculateNewPos(newSquare: list[str], pickupDrop):
   # change the letters into alphabet number index to perform math scaling operation
   # represents the difference in # of squares to the a1 square
@@ -51,11 +54,8 @@ def calculateNewPos(newSquare: list[str], pickupDrop):
   yScale = int(newSquare[1]) - 1 
   # print("piece at:", newSquare, boardState[yScale][xScale])
 
-  origin = [0.1375, 0.515] # square 'a1' coordinate points
-  squareSize = 0.038
-
-  newX = origin[0] - (squareSize * xScale)
-  newY = origin[1] - (squareSize * yScale)
+  newX = origin[0] - (squareSizeX * xScale)
+  newY = origin[1] - (squareSizeY * yScale)
 
   # z height which is above chess piece height
   safeZ = 0.1
