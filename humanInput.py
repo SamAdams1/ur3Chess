@@ -5,6 +5,8 @@ from robotConnection import acc
 
 from robotActions import robotMoveSequence
 from robotActions import board
+from robotActions import calculateNewPos
+
 import time
 
 import keyboard
@@ -68,21 +70,18 @@ def squareSizeCalibrationTest():
 
 def moveToXPos():
   while True:
-    origin[0]  = float(input("Enter new X:"))
-
-    # x= 0.1225
+    x = float(input("Enter new X:"))
 
     # [0.13750777013424423, 0.5150145677723298, 0.03003519963260068, -3.1399216057739445, -9.682488007800743e-05, -0.0001103704880899726]
     rtde_c.moveL([x, 0.525, 0.03, -3.14,0,0], 0.05, 0.05)
 
 def moveToYPos():
   while True:
-    # x = float(input("Enter new X:"))
     y = float(input("Enter new Y: "))
-
 
     # [0.13750777013424423, 0.5150145677723298, 0.03003519963260068, -3.1399216057739445, -9.682488007800743e-05, -0.0001103704880899726]
     rtde_c.moveL([0.1215, y, 0.03, -3.14,0,0], 0.05, 0.05)
+
 
 # x = 0.1215
 # Y:0.5125
@@ -116,7 +115,21 @@ def humanInputLoop():
         case "idle":
           rtde_c.moveJ([-1.5589281,-1.424189,0.959931, -1.15192,-1.6350244,0], vel, acc)
         case "pose":
-          print("pose: ", rtde_c.getActualTCPPose())
+          print("pose: ", rtde_r.getActualTCPPose())
+        case "joint":
+          print("jointPositions: ", rtde_r.getActualQ())
+        case "close":
+          print("closing")
+          # rtde_c.setStandardDigitalOut(0, True)
+          # Send URScript command to close the gripper
+          script_command = "movej([-1.57,-1.57,0, -1.57,0,0], a=1.0, v=0.5, r=0.01)" # doesnt work
+          # script_command = "nsr_grip()"
+          rtde_c.sendCustomScript(script_command)
+          break
+          # rtde_c.script("rq_activate()")
+          # rtde_c.script("rq_close()")  # Close gripper
+        case "open":
+          rtde_c.script("rq_open()")  # Open gripper
         case _:
           raise Exception()
         
@@ -128,16 +141,21 @@ def humanInputLoop():
       else:
         print("Moving to: ", newSquare[:2], newSquare[2:])
 
-        # calculateNewPos(newSquare[:2], 'p')
-        # calculateNewPos(newSquare[2:], 'd')
+        calculateNewPos(newSquare[:2], 'p')
+        calculateNewPos(newSquare[2:], 'd')
 
-        # pushing humans move to board, then giving stockfish the boardstate
-        board.push_san(command)
+        # pushing humans move to board
+        # board.push_san(command)
 
-        robotMoveSequence()
+        # robotMoveSequence()
 
 
 def playGame():
+  # rtde_c.moveJ([-1.5589281,-1.424189,0.959931, -1.15192,-1.6350244,0], vel, acc) 
+
+  # point to view chess board from top down.
+  rtde_c.moveJ([-1.9529297987567347, -1.3281212163022538, 0.5247171560870569, -1.320993722682335, -1.2840612570392054, -0.3136356512652796], vel, acc)
+
   humanInputLoop()
 
 
@@ -151,7 +169,7 @@ a8: 0.1375, 0.2475
 h8: -0.13, 0.2475
 h1: -0.13, 0.515
 
-captured pieces zone: (15 zones needed, cant capture king (16-1))
+captured pieces zone: (16 zones needed, cant capture king but extra queen)
 [["","","","","",],
 ["","","","","",],
 ["","","","","",]]
@@ -160,7 +178,6 @@ add to z -> move robot up
 add to  y -> move down number ~ square 8 -> 1
 add to x -> move up letter ~ squares h -> a
 '''
-
 """
 pseudocode:
 
@@ -176,10 +193,13 @@ return to idle
 """
 
 """
-solve problem of not knowing if there is a piece already there when moving:
+cannot send script to robot as it stops the control script from running
+will have to do the modbus solution
 
-keep dictionary or 3d array of board state and check the array before moving
-if there is a piece there, move it off the board before moving own piece!!
-im smart
+
+rtde_c.stopScript()
+send tool closing script
+rtde_c.reuploadScript()
+
 
 """
