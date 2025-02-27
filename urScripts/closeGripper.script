@@ -976,5 +976,6 @@ def closeGripper():
     	NSRD_CurCalWidth = NSRDDV.NSRDD.GetCurCalWidth(1, "ref_offset_0")
     # end: URCap Program Node
     # end: URCap Program Node
+    halt
   end
 end

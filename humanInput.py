@@ -145,9 +145,9 @@ def humanInputLoop():
         calculateNewPos(newSquare[2:], 'd')
 
         # pushing humans move to board
-        # board.push_san(command)
-
-        # robotMoveSequence()
+        board.push_san(command)
+        # robots turn to move
+        robotMoveSequence()
 
 
 def playGame():
@@ -156,7 +156,22 @@ def playGame():
   # point to view chess board from top down.
   rtde_c.moveJ([-1.9529297987567347, -1.3281212163022538, 0.5247171560870569, -1.320993722682335, -1.2840612570392054, -0.3136356512652796], vel, acc)
 
-  humanInputLoop()
+  print("stopping script")
+  rtde_c.stopScript()
+  print("gripper action")
+  rtde_c.zeroFtSensor()  # Clears any blocking operations
+  rtde_c.sendCustomScriptFile("urScripts\closeGripper.script")
+  print("test")
+  rtde_c.reconnect()
+  rtde_c.sendCustomScriptFile("urScripts\rtde_control_loop.script")
+
+  rtde_c.reuploadScript()
+  print("resuming script")
+
+  rtde_c.moveJ([-1.5589281,-1.424189,0.959931, -1.15192,-1.6350244,0], vel, acc) 
+  
+
+  # humanInputLoop()
 
 
 

@@ -35,9 +35,10 @@ def robotMoveSequence():
     print("capturing")
     calculateNewPos(dropSquare, 'p') # pickup captured piece
 
-
   calculateNewPos(pickupSquare, 'p')
   calculateNewPos(dropSquare, 'd')
+  
+  
 
   printBoard()
 

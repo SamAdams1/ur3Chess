@@ -1,3 +1,4 @@
+# https://robotiq.zendesk.com/hc/en-us/articles/4403928641427-Retrieving-Robotiq-Wrist-Camera-pictures-on-a-computer
 import requests 
 from tkinter import *
 from io import BytesIO
