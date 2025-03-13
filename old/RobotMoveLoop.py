@@ -1,6 +1,6 @@
 import socket
 
-robotIP = "10.20.59.13"
+robotIP = "10.20.59.12"
 PRIMARY_PORT = 30001
 SECONDARY_PORT = 30002
 REALTIME_PORT = 30003
@@ -95,7 +95,33 @@ def calculateNewPos(newSquare: list[str]):
 
   send_urscript_command(f"movel(p[{newX}, {newY}, 0.03, -3.14,0,0], a=0.1, v=0.1, r=0)")
 
-squareInputLoop()
+
+# with open("urScripts\closeGripper.script", "r") as file:
+#     script_data = file.read()
+# client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# client_socket.connect((robotIP, PRIMARY_PORT))
+
+# # Send the script data to the robot
+# client_socket.sendall(script_data.encode())
+
+
+"""
+  WAS ABLE TO MOVE AND CLOSE ROBOT GRIPPER, HAVE TO USE OLD
+  FASHIONED WAY
+"""
+
+def playGame():
+  # rtde_c.moveJ([-1.5589281,-1.424189,0.959931, -1.15192,-1.6350244,0], vel, acc) 
+  
+  # send_urscript_command("movej([-1.9529297987567347, -1.3281212163022538, 0.5247171560870569, -1.320993722682335, -1.2840612570392054, -0.3136356512652796], a=1.0, v=0.5, r=0.01)")
+  # point to view chess board from top down.
+  # rtde_c.moveJ([-1.9529297987567347, -1.3281212163022538, 0.5247171560870569, -1.320993722682335, -1.2840612570392054, -0.3136356512652796], vel, acc)
+  # rtde_c.moveJ([-1.5589281,-1.424189,0.959931, -1.15192,-1.6350244,0], vel, acc) 
+
+  squareInputLoop()
+
+playGame()
+
 
 
 '''

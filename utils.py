@@ -20,6 +20,6 @@ class ChessFuncs:
 
 chessFuncs = ChessFuncs()
 
-print(chessFuncs.squareToNumber("a1"))
-print(chessFuncs.squareToNumber("g8"))
-print(chessFuncs.squareToNumber("h8"))
+# print(chessFuncs.squareToNumber("a1"))
+# print(chessFuncs.squareToNumber("g8"))
+# print(chessFuncs.squareToNumber("h8"))

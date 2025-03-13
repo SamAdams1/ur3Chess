@@ -2,6 +2,8 @@
 
 from rtde_control import RTDEControlInterface as RTDEControl
 from rtde_receive import RTDEReceiveInterface as RTDEReceive
+from rtde_io import RTDEIOInterface
+
 import os
 import psutil
 import sys
@@ -13,7 +15,7 @@ rtde_frequency = 500.0
 dt = 1.0/rtde_frequency  # 2ms
 flags = RTDEControl.FLAG_VERBOSE | RTDEControl.FLAG_UPLOAD_SCRIPT
 ur_cap_port = 50002
-robot_ip = "10.20.59.13"
+robot_ip = "10.20.59.12"
 
 lookahead_time = 0.1
 gain = 600
@@ -24,6 +26,15 @@ rt_control_priority = 85
 
 rtde_r = RTDEReceive(robot_ip, rtde_frequency, [], True, False, rt_receive_priority)
 rtde_c = RTDEControl(robot_ip, rtde_frequency, flags, ur_cap_port, rt_control_priority)
+
+rtde_io = RTDEIOInterface(robot_ip, rtde_frequency)
+# status = rtde_io.setInputIntRegister(18, 1) 
+# print(f"Digital Input 18 State: {status}")
+
+# status = rtde_io_.setInputIntRegister(18, 2)  
+# print(f"Digital Input 18 State: {status}")
+
+
 
 # Set application real-time priority
 os_used = sys.platform

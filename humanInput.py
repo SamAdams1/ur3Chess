@@ -1,5 +1,6 @@
 from robotConnection import rtde_c
 from robotConnection import rtde_r
+from robotConnection import rtde_io
 from robotConnection import vel
 from robotConnection import acc
 
@@ -119,15 +120,14 @@ def humanInputLoop():
         case "joint":
           print("jointPositions: ", rtde_r.getActualQ())
         case "close":
-          print("closing")
-          # rtde_c.setStandardDigitalOut(0, True)
-          # Send URScript command to close the gripper
-          script_command = "movej([-1.57,-1.57,0, -1.57,0,0], a=1.0, v=0.5, r=0.01)" # doesnt work
-          # script_command = "nsr_grip()"
-          rtde_c.sendCustomScript(script_command)
-          break
-          # rtde_c.script("rq_activate()")
-          # rtde_c.script("rq_close()")  # Close gripper
+          try:
+            status = rtde_io.setInputIntRegister(18, 1) 
+            print(f"closing = Digital Input 18 State: {status}")
+          except Exception as e:
+            print(e)
+        case "open":
+          status = rtde_io.setInputIntRegister(18, 2) 
+          print(f"opening - Digital Input 18 State: {status}")
         case "open":
           rtde_c.script("rq_open()")  # Open gripper
         case _:
@@ -149,29 +149,18 @@ def humanInputLoop():
         # robots turn to move
         robotMoveSequence()
 
+import threading
 
 def playGame():
-  # rtde_c.moveJ([-1.5589281,-1.424189,0.959931, -1.15192,-1.6350244,0], vel, acc) 
+  rtde_c.moveJ([-1.5589281,-1.424189,0.959931, -1.15192,-1.6350244,0], vel, acc) 
 
   # point to view chess board from top down.
   rtde_c.moveJ([-1.9529297987567347, -1.3281212163022538, 0.5247171560870569, -1.320993722682335, -1.2840612570392054, -0.3136356512652796], vel, acc)
+  # rtde_c.moveJ([-1.5589281,-1.424189,0.959931, -1.15192,-1.6350244,0], vel, acc) 
 
-  print("stopping script")
-  rtde_c.stopScript()
-  print("gripper action")
-  rtde_c.zeroFtSensor()  # Clears any blocking operations
-  rtde_c.sendCustomScriptFile("urScripts\closeGripper.script")
-  print("test")
-  rtde_c.reconnect()
-  rtde_c.sendCustomScriptFile("urScripts\rtde_control_loop.script")
+  humanInputLoop()
 
-  rtde_c.reuploadScript()
-  print("resuming script")
 
-  rtde_c.moveJ([-1.5589281,-1.424189,0.959931, -1.15192,-1.6350244,0], vel, acc) 
-  
-
-  # humanInputLoop()
 
 
 
