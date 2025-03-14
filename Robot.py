@@ -13,6 +13,12 @@ stockfish.set_elo_rating(1000)
 
 import chess
 board = chess.Board()
+# board.set_board_fen("rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2") # test e4d5 pawn capture
+
+# zheight
+pieceHeights = {
+  "p": 0.1
+}
 
 class Robot:
   def __init__(self):
@@ -68,23 +74,25 @@ class Robot:
       closeScript = file.read()
     self.sendUrScript(closeScript)
 
+  def readCommands(self, command):
+    match command:
+      case "home":
+        self.moveJ([-1.57,-1.57,0, -1.57,0,0]) # home
+      case "idle":
+        self.moveJ([-1.5589281,-1.424189,0.959931, -1.15192,-1.6350244,0]) # idle
+      case "open":
+        self.openGripper()
+      case "close":
+        self.closeGripper()
+      case _:
+        raise Exception()
+      
   def receiveUserInput(self, command):
     newSquare = list(command)
     # go to IDLE before moving to squares or will cause joint errors
     # Word commands in try loop
     try: 
-      match command:
-        case "home":
-          self.moveJ([-1.57,-1.57,0, -1.57,0,0]) # home
-        case "idle":
-          self.moveJ([-1.5589281,-1.424189,0.959931, -1.15192,-1.6350244,0]) # idle
-        case "open":
-          self.openGripper()
-        case "close":
-          self.closeGripper()
-        case _:
-          raise Exception()
-        
+        self.readCommands(command)
     except:
       # Square commands in except loop
       # check input validity
@@ -92,17 +100,50 @@ class Robot:
         print("Invalid Square.\n\n")
       else:
         print("calculate:", command, "\n")
-        self.calculateNewPos(newSquare, "p")
-        self.calculateNewPos(newSquare[2:], "d")
+        self.calculateNewSquareCoords(newSquare, "p")
+        self.calculateNewSquareCoords(newSquare[2:], "d")
 
         board.push_san(command)
         printBoard()
         self.robotMoveSequence()
+    
+  def moveSequence(self, move:str): # move in algebraic notation e4e5
+    pickupSquare = move[:2]
+    dropSquare = move[2:]
+    
+    pickupX, pickupY = self.calculateNewSquareCoords(pickupSquare)
+    self.goToAboveSquare(pickupX, pickupY)
+    self.pickupOrDropSequence(pickupX, pickupY)
+
+    dropX, dropY = self.calculateNewSquareCoords(dropSquare)
+    self.goToAboveSquare(dropX, dropY)
+    self.pickupOrDropSequence(dropX, dropY)    
 
 
-  def calculateNewPos(self, newSquare: list[str], pickupDrop):
-    #         x,      y
-    origin = [0.1215, 0.5125] # square 'a1' center coordinate points
+
+  def goToAboveSquare(self, x, y): # moves over to above square at safe distance
+    self.calculateNewSquareCoords(s)
+
+    safeZ = 0.01 # z height which is above chess piece height
+    self.moveL(newX, newY, safeZ)
+
+  def pickupOrDropSequence(self, pickupOrDrop, newX, newY, pieceZHeight):
+    #moves down to table, pieces height
+    self.moveL(newX, newY, pieceZHeight)
+    time.sleep(2)
+    
+    match pickupOrDrop:
+      case "p":
+        self.closeGripper()
+      case "d":
+        self.openGripper()
+        
+    time.sleep(2)
+    self.moveL(newX, newY, pieceZHeight)
+    time.sleep(2)
+
+  def calculateNewSquareCoords(self, newSquare: list[str]):
+    origin = [0.1215, 0.5125] # square 'a1' center coordinate points [x, y]
     squareSizeX = 0.0385
     squareSizeY = 0.0382
     
@@ -118,31 +159,19 @@ class Robot:
     newX = origin[0] - (squareSizeX * xScale)
     newY = origin[1] - (squareSizeY * yScale)
 
-    # z height which is above chess piece height
-    safeZ = 0.01
-    self.moveL(newX, newY, safeZ)
-    time.sleep(2)
+    return newX, newY
+
+    
     # safeZ = self.calculateZCoord() 
-    self.moveL(newX, newY, -0.075)
-    time.sleep(1)
 
 
-    match pickupDrop: #p for pickup, d for drop
-      case "p":
-        print("picking up piece")
-        self.closeGripper()
-        time.sleep(2)
-        self.moveL(newX, newY, safeZ)
-        time.sleep(2)
-      case "d":
-        print("dropping piece")
-        self.openGripper()
-        time.sleep(2)
-        self.moveL(newX, newY, safeZ)
-        time.sleep(2)
-        self.moveJ([-1.5589281,-1.424189,0.959931, -1.15192,-1.6350244,0])
-        time.sleep(2)
+    self.pickupDropSequence()
 
+  """
+  func1 go to above square
+  pickup/drop seq - down, close/open grip, up
+
+  """
   
   def robotMoveSequence(self):
     stockfish.set_fen_position(board.fen())
@@ -151,18 +180,18 @@ class Robot:
     print(board.fen())
     print(bestMove)
 
-    pickupSquare = bestMove[:2]
-    dropSquare = bestMove[2:]
+    self.moveSequence(bestMove)
+
+    
 
     # checks dropOff square is empty
     if board.piece_at(utils.chessFuncs.squareToNumber(dropSquare)):
       print("capturing")
-      self.calculateNewPos(dropSquare, 'p') # pickup captured piece
+      self.calculateNewSquareCoords(dropSquare, 'p') # pickup captured piece
 
-    self.calculateNewPos(pickupSquare, 'p')
-    self.calculateNewPos(dropSquare, 'd')
-    
-    
+    self.calculateNewSquareCoords(pickupSquare, 'p')
+    self.calculateNewSquareCoords(dropSquare, 'd')
+
 
     printBoard()
 
@@ -181,10 +210,11 @@ def main():
 
   while True:
     command = input("Enter newSquare (Example:'e2e4'):\n")
-
     thisRobot.receiveUserInput(command)
 
 main()
+# thisRobot = Robot()
+# thisRobot
 
 
 
