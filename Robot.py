@@ -6,6 +6,14 @@ new_line = "\n"
 numbers = "12345678"
 letters = "abcdefgh"
 
+from stockfish import Stockfish
+stockfish = Stockfish(path=r"C:\Users\adams\Downloads\stockfish-windows-x86-64-vnni512\stockfish\stockfish-windows-x86-64-vnni512.exe")
+stockfish.set_depth(20)
+stockfish.set_elo_rating(1000)
+
+import chess
+board = chess.Board()
+
 class Robot:
   def __init__(self):
     self.ip = "10.20.59.12"
@@ -49,14 +57,13 @@ class Robot:
   def calculateZCoord(): # calc z coord based on height of the piece
     {}
 
-  # New Scale Precision Gripper
-  def openGripper(self):
-    print("open")
+  
+  def openGripper(self): # New Scale Precision Gripper
     with open("urScripts\openGripper.script", "r") as file:
       openScript = file.read()
     self.sendUrScript(openScript)
-  def closeGripper(self):
-    print("closing")
+
+  def closeGripper(self): # New Scale Precision Gripper
     with open("urScripts\closeGripper.script", "r") as file:
       closeScript = file.read()
     self.sendUrScript(closeScript)
@@ -84,8 +91,13 @@ class Robot:
       if newSquare[0] not in letters or newSquare[1] not in numbers:
         print("Invalid Square.\n\n")
       else:
-        print("Moving to:", newSquare, "\n\n")
+        print("calculate:", command, "\n")
         self.calculateNewPos(newSquare, "p")
+        self.calculateNewPos(newSquare[2:], "d")
+
+        board.push_san(command)
+        printBoard()
+        self.robotMoveSequence()
 
 
   def calculateNewPos(self, newSquare: list[str], pickupDrop):
@@ -100,7 +112,7 @@ class Robot:
 
 
     # subtract 1 to make 0, if a1 is enter it will go back to origin
-    yScale = int(newSquare[1]) - 1 
+    yScale = int(newSquare[1]) - 1
     # print("piece at:", newSquare, boardState[yScale][xScale])
 
     newX = origin[0] - (squareSizeX * xScale)
@@ -112,16 +124,56 @@ class Robot:
     time.sleep(2)
     # safeZ = self.calculateZCoord() 
     self.moveL(newX, newY, -0.075)
+    time.sleep(1)
+
 
     match pickupDrop: #p for pickup, d for drop
       case "p":
         print("picking up piece")
+        self.closeGripper()
+        time.sleep(2)
         self.moveL(newX, newY, safeZ)
+        time.sleep(2)
       case "d":
         print("dropping piece")
+        self.openGripper()
+        time.sleep(2)
         self.moveL(newX, newY, safeZ)
         time.sleep(2)
         self.moveJ([-1.5589281,-1.424189,0.959931, -1.15192,-1.6350244,0])
+        time.sleep(2)
+
+  
+  def robotMoveSequence(self):
+    stockfish.set_fen_position(board.fen())
+    bestMove = stockfish.get_best_move()
+    board.push_san(bestMove)
+    print(board.fen())
+    print(bestMove)
+
+    pickupSquare = bestMove[:2]
+    dropSquare = bestMove[2:]
+
+    # checks dropOff square is empty
+    if board.piece_at(utils.chessFuncs.squareToNumber(dropSquare)):
+      print("capturing")
+      self.calculateNewPos(dropSquare, 'p') # pickup captured piece
+
+    self.calculateNewPos(pickupSquare, 'p')
+    self.calculateNewPos(dropSquare, 'd')
+    
+    
+
+    printBoard()
+
+def printBoard():
+  print("   A B C D E F G H")
+  print("   _______________")
+  for rank, row in zip(range(8,0,-1), str(board).split("\n")):
+      print(f"{rank} |{row}| {rank}")  # Add rank labels to each row
+  print("   _______________")
+  print("   A B C D E F G H")
+  print("\n")
 
 
 def main():
