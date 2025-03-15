@@ -15,10 +15,7 @@ import chess
 board = chess.Board()
 # board.set_board_fen("rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2") # test e4d5 pawn capture
 
-# zheight
-pieceHeights = {
-  "p": 0.1
-}
+
 
 class Robot:
   def __init__(self):
@@ -97,52 +94,33 @@ class Robot:
       # Square commands in except loop
       # check input validity
       if newSquare[0] not in letters or newSquare[1] not in numbers:
-        print("Invalid Square.\n\n")
+        print("Invalid Square.\n")
       else:
         print("calculate:", command, "\n")
-        self.calculateNewSquareCoords(newSquare, "p")
-        self.calculateNewSquareCoords(newSquare[2:], "d")
+        self.moveSequence(command)
 
         board.push_san(command)
-        printBoard()
-        self.robotMoveSequence()
-    
-  def moveSequence(self, move:str): # move in algebraic notation e4e5
-    pickupSquare = move[:2]
-    dropSquare = move[2:]
-    
-    pickupX, pickupY = self.calculateNewSquareCoords(pickupSquare)
-    self.goToAboveSquare(pickupX, pickupY)
-    self.pickupOrDropSequence(pickupX, pickupY)
-
-    dropX, dropY = self.calculateNewSquareCoords(dropSquare)
-    self.goToAboveSquare(dropX, dropY)
-    self.pickupOrDropSequence(dropX, dropY)    
+        self.robotDecisionMaking()
 
 
-
-  def goToAboveSquare(self, x, y): # moves over to above square at safe distance
-    self.calculateNewSquareCoords(s)
-
-    safeZ = 0.01 # z height which is above chess piece height
-    self.moveL(newX, newY, safeZ)
-
-  def pickupOrDropSequence(self, pickupOrDrop, newX, newY, pieceZHeight):
+  def pickupOrDropSequence(self, pickupOrDrop: str, newX:float, newY: float, pieceZHeight: float):
     #moves down to table, pieces height
+    time.sleep(2)
     self.moveL(newX, newY, pieceZHeight)
     time.sleep(2)
     
     match pickupOrDrop:
-      case "p":
+      case "pickup":
         self.closeGripper()
-      case "d":
+      case "drop":
         self.openGripper()
         
     time.sleep(2)
     self.moveL(newX, newY, pieceZHeight)
     time.sleep(2)
 
-  def calculateNewSquareCoords(self, newSquare: list[str]):
+
+  def calculateNewSquareCoords(self, newSquare):
     origin = [0.1215, 0.5125] # square 'a1' center coordinate points [x, y]
     squareSizeX = 0.0385
     squareSizeY = 0.0382
@@ -159,41 +137,55 @@ class Robot:
     newX = origin[0] - (squareSizeX * xScale)
     newY = origin[1] - (squareSizeY * yScale)
 
-    return newX, newY
+    return [newX, newY]
 
+
+  def moveSequence(self, move):
+    # parsing algrebraic notation into two separate squares
+    # need to catch special moves like castling and promoting a piece.
+    pickupSquare = move[:2]
+    dropSquare = move[2:]
+
+    # x and y coordinate points of squares
+    pickupCoords = self.calculateNewSquareCoords(pickupSquare)
+    dropCoords = self.calculateNewSquareCoords(dropSquare)
+
+    if len(move) == 4: # normal moves ex:'e2e4'
+      # check if dropSquare is empty
+      if board.piece_at(utils.chessFuncs.squareToNumber(dropSquare)):
+        self.capturePiece(dropCoords)
+
+      # go above the piece to be moved, then go down and pick it up
+      self.moveL(pickupCoords[0], pickupCoords[1], 0.01)
+      self.pickupOrDropSequence("pickup", pickupCoords[0], pickupCoords[1], -0.03)
+
+      #move over to above the drop square, then go down and drop piece
+      self.moveL(dropCoords[0], dropCoords[1], 0.01)
+      self.pickupOrDropSequence("drop", dropCoords[0], dropCoords[1], -0.03)
+
+
+
+    else: #castling, promotion, 
+      print("abnormal move handling", move)
+
+    printBoard()
     
-    # safeZ = self.calculateZCoord() 
 
+  def capturePiece(self, pieceCoords):
+    print("capturing piece at", pieceCoords)
+    # move piece off board
+    
 
-    self.pickupDropSequence()
-
-  """
-  func1 go to above square
-  pickup/drop seq - down, close/open grip, up
-
-  """
-  
-  def robotMoveSequence(self):
+  def robotDecisionMaking(self):
+    # set stockfish board = pychess board then get bestmove
     stockfish.set_fen_position(board.fen())
     bestMove = stockfish.get_best_move()
+
+    self.moveSequence(bestMove)
     board.push_san(bestMove)
     print(board.fen())
     print(bestMove)
 
-    self.moveSequence(bestMove)
-
-    
-
-    # checks dropOff square is empty
-    if board.piece_at(utils.chessFuncs.squareToNumber(dropSquare)):
-      print("capturing")
-      self.calculateNewSquareCoords(dropSquare, 'p') # pickup captured piece
-
-    self.calculateNewSquareCoords(pickupSquare, 'p')
-    self.calculateNewSquareCoords(dropSquare, 'd')
-
-
-    printBoard()
 
 def printBoard():
   print("   A B C D E F G H")
@@ -212,12 +204,41 @@ def main():
     command = input("Enter newSquare (Example:'e2e4'):\n")
     thisRobot.receiveUserInput(command)
 
-main()
-# thisRobot = Robot()
-# thisRobot
+# main()
+
+def testPieceHeight(z):
+  thisRobot = Robot()
+  # z = -0.003
+  MAX_Z = 0.05
+  x, y = thisRobot.calculateNewSquareCoords("a1")
+  # thisRobot.moveL(x, y, 0.0)
+  # thisRobot.moveL(x, y, z)
+
+  thisRobot.moveL(x, y, 0.0)
+  time.sleep(.5)
+  thisRobot.pickupOrDropSequence("pickup", x, y, z)
+  time.sleep(1)
+  thisRobot.moveL(x, y, MAX_Z)
+  time.sleep(0.5)
+  thisRobot.pickupOrDropSequence("drop", x, y, z)
+  time.sleep(1)
+  thisRobot.moveL(x, y, 0.0)
+
+testPieceHeight(-0.05)
+
+"""
+calculate the z height to pick up pieces by indexing the dictionary
 
 
+"""
 
-
-
-    
+# relative zheight - pawn, rook, knight, bishop, queen, king
+pieceHeights = {
+  "p": -0.05,
+  "r": -0.04,
+  "n": -0.04, #cannot pick up due to weird shape
+  "b": -0.035,
+  "q": -0.02,
+  "k": -0.003, #very close/sketchy, hanging on by a thread
+}
+# 0.05 IS THE MAX HEIGHT FOR Z WITHOUT CAUSING JOINT FAILURES
