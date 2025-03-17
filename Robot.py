@@ -5,6 +5,8 @@ import time
 new_line = "\n"
 numbers = "12345678"
 letters = "abcdefgh"
+MAX_Z = 0.05
+
 
 from stockfish import Stockfish
 stockfish = Stockfish(path=r"C:\Users\adams\Downloads\stockfish-windows-x86-64-vnni512\stockfish\stockfish-windows-x86-64-vnni512.exe")
@@ -13,8 +15,7 @@ stockfish.set_elo_rating(1000)
 
 import chess
 board = chess.Board()
-# board.set_board_fen("rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2") # test e4d5 pawn capture
-
+# board.set_board_fen("rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR") # test e4d5 pawn capture
 
 
 class Robot:
@@ -30,6 +31,16 @@ class Robot:
     self.a = "0.3" # robots max acceleration
     self.v = "0.3" # robots max velocity
 
+    # relative zheight - pawn, rook, knight, bishop, queen, king
+    self.pieceHeights = { # 0.05 IS THE MAX HEIGHT FOR Z WITHOUT CAUSING JOINT FAILURES
+      "p": -0.05,
+      "r": -0.04,
+      "n": -0.04, #cannot pick up due to weird shape
+      "b": -0.035,
+      "q": -0.02,
+      "k": -0.003, #very close/sketchy, hanging on by a thread
+    }
+
 
   def createSocket(self, port):
     try:
@@ -37,7 +48,7 @@ class Robot:
       s.connect((self.ip, port))
   
       print(port, "Socket Connection Successful.")
-      self.receiveUserInput("idle")
+      # self.goToIdle()
       return s
     except:
       print(f"Error: {port} Socket Didn't Connect.")
@@ -76,7 +87,7 @@ class Robot:
       case "home":
         self.moveJ([-1.57,-1.57,0, -1.57,0,0]) # home
       case "idle":
-        self.moveJ([-1.5589281,-1.424189,0.959931, -1.15192,-1.6350244,0]) # idle
+        self.goToIdle()
       case "open":
         self.openGripper()
       case "close":
@@ -84,7 +95,11 @@ class Robot:
       case _:
         raise Exception()
       
-  def receiveUserInput(self, command):
+  def goToIdle(self):
+    self.moveJ([-1.5589281,-1.424189,0.959931, -1.15192,-1.6350244,0]) # idle
+  
+
+  def receiveUserInput(self, command: str):
     newSquare = list(command)
     # go to IDLE before moving to squares or will cause joint errors
     # Word commands in try loop
@@ -96,16 +111,21 @@ class Robot:
       if newSquare[0] not in letters or newSquare[1] not in numbers:
         print("Invalid Square.\n")
       else:
-        print("calculate:", command, "\n")
+        print("calculate:", command, new_line)
         self.moveSequence(command)
-
         board.push_san(command)
+        printBoard()
+
+
         self.robotDecisionMaking()
 
 
   def pickupOrDropSequence(self, pickupOrDrop: str, newX:float, newY: float, pieceZHeight: float):
-    #moves down to table, pieces height
+    time.sleep(1)
+    # moves to above the desired square
+    self.moveL(newX, newY, MAX_Z)
     time.sleep(2)
+    #moves down to table, pieces height
     self.moveL(newX, newY, pieceZHeight)
     time.sleep(2)
     
@@ -116,8 +136,8 @@ class Robot:
         self.openGripper()
         
     time.sleep(2)
-    self.moveL(newX, newY, pieceZHeight)
-    time.sleep(2)
+    self.moveL(newX, newY, MAX_Z) # moves above squares
+    # time.sleep(.5)
 
 
   def calculateNewSquareCoords(self, newSquare):
@@ -127,7 +147,7 @@ class Robot:
     
     # change the letters into alphabet number index to perform math scaling operation
     # represents the difference in # of squares to the a1 square
-    xScale = utils.chessFuncs.fileToNumber(newSquare[0])
+    xScale = utils.chessFuncs.rankToNumber(newSquare[0])
 
 
     # subtract 1 to make 0, if a1 is enter it will go back to origin
@@ -152,29 +172,39 @@ class Robot:
 
     if len(move) == 4: # normal moves ex:'e2e4'
       # check if dropSquare is empty
-      if board.piece_at(utils.chessFuncs.squareToNumber(dropSquare)):
-        self.capturePiece(dropCoords)
+      pieceAtDropSquare = self.pieceAtSquare(dropSquare)
+      if pieceAtDropSquare:
+        self.capturePiece(dropCoords, pieceAtDropSquare)
 
+      # returns letter abreviation of pieces
+      pieceToPickup = self.pieceAtSquare(pickupSquare)
+      print(utils.chessFuncs.squareIndex[dropSquare], utils.chessFuncs.squareIndex[dropSquare])
       # go above the piece to be moved, then go down and pick it up
-      self.moveL(pickupCoords[0], pickupCoords[1], 0.01)
-      self.pickupOrDropSequence("pickup", pickupCoords[0], pickupCoords[1], -0.03)
+      self.pickupOrDropSequence("pickup", pickupCoords[0], pickupCoords[1], self.getPieceHeight(pieceToPickup))
 
       #move over to above the drop square, then go down and drop piece
-      self.moveL(dropCoords[0], dropCoords[1], 0.01)
-      self.pickupOrDropSequence("drop", dropCoords[0], dropCoords[1], -0.03)
-
+      self.pickupOrDropSequence("drop", dropCoords[0], dropCoords[1], self.getPieceHeight(pieceToPickup))
 
 
     else: #castling, promotion, 
       print("abnormal move handling", move)
 
-    printBoard()
-    
+  
+  def pieceAtSquare(self, algNotation: str) -> int:
+    piece = board.piece_at(utils.chessFuncs.squareIndex[algNotation])
+    if piece:
+      piece = piece.symbol().lower()
+    return piece
 
-  def capturePiece(self, pieceCoords):
-    print("capturing piece at", pieceCoords)
+  def capturePiece(self, pieceCoords: list[float], piece):
+    print(f"capturing {piece} at", pieceCoords)
+
+    self.pickupOrDropSequence("pickup", pieceCoords[0], pieceCoords[1], self.getPieceHeight(piece))
+
     # move piece off board
-    
+
+  def getPieceHeight(self, pieceAbbrev) -> float:
+    return self.pieceHeights[pieceAbbrev]
 
   def robotDecisionMaking(self):
     # set stockfish board = pychess board then get bestmove
@@ -183,6 +213,7 @@ class Robot:
 
     self.moveSequence(bestMove)
     board.push_san(bestMove)
+    printBoard()
     print(board.fen())
     print(bestMove)
 
@@ -199,46 +230,39 @@ def printBoard():
 
 def main():
   thisRobot = Robot()
+  printBoard()
 
   while True:
     command = input("Enter newSquare (Example:'e2e4'):\n")
     thisRobot.receiveUserInput(command)
 
-# main()
+# print(chess.B2, utils.chessFuncs.squareIndex["b2"])
+main()
 
 def testPieceHeight(z):
   thisRobot = Robot()
   # z = -0.003
-  MAX_Z = 0.05
   x, y = thisRobot.calculateNewSquareCoords("a1")
+  # basic up and down, comment x,yz out when failure to adjust
+  thisRobot.moveL(x, y, 0.0)
+  thisRobot.moveL(x, y, z)
+
   # thisRobot.moveL(x, y, 0.0)
-  # thisRobot.moveL(x, y, z)
+  # time.sleep(.5)
+  # thisRobot.pickupOrDropSequence("pickup", x, y, z)
+  # time.sleep(1)
+  # thisRobot.moveL(x, y, MAX_Z)
+  # time.sleep(0.5)
+  # thisRobot.pickupOrDropSequence("drop", x, y, z)
+  # time.sleep(1)
+  # thisRobot.moveL(x, y, 0.0)
 
-  thisRobot.moveL(x, y, 0.0)
-  time.sleep(.5)
-  thisRobot.pickupOrDropSequence("pickup", x, y, z)
-  time.sleep(1)
-  thisRobot.moveL(x, y, MAX_Z)
-  time.sleep(0.5)
-  thisRobot.pickupOrDropSequence("drop", x, y, z)
-  time.sleep(1)
-  thisRobot.moveL(x, y, 0.0)
-
-testPieceHeight(-0.05)
+# testPieceHeight(-0.05)
 
 """
-calculate the z height to pick up pieces by indexing the dictionary
-
-
+create functionality to 
+ - take piece off board
+ - castle, promote pawn
 """
 
-# relative zheight - pawn, rook, knight, bishop, queen, king
-pieceHeights = {
-  "p": -0.05,
-  "r": -0.04,
-  "n": -0.04, #cannot pick up due to weird shape
-  "b": -0.035,
-  "q": -0.02,
-  "k": -0.003, #very close/sketchy, hanging on by a thread
-}
-# 0.05 IS THE MAX HEIGHT FOR Z WITHOUT CAUSING JOINT FAILURES
+
