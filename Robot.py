@@ -7,15 +7,23 @@ numbers = "12345678"
 letters = "abcdefgh"
 MAX_Z = 0.05
 
+# for calculating square positions
+origin = [0.1215, 0.5125] # square 'a1' center coordinate points [x, y]
+squareSizeX = 0.0385
+squareSizeY = 0.0382
 
+# chess engine
 from stockfish import Stockfish
 stockfish = Stockfish(path=r"C:\Users\adams\Downloads\stockfish-windows-x86-64-vnni512\stockfish\stockfish-windows-x86-64-vnni512.exe")
 stockfish.set_depth(20)
 stockfish.set_elo_rating(1000)
 
+# chess board
 import chess
 board = chess.Board()
 # board.set_board_fen("rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR") # test e4d5 pawn capture
+# board.set_board_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/R3KBNR") # White Queenside Castling
+board.set_board_fen("1nbqkbnr/Pppppppp/8/8/8/8/1PPPPPPP/RNBQKBNR") # e7 pawn promoting
 
 
 class Robot:
@@ -40,6 +48,21 @@ class Robot:
       "q": -0.02,
       "k": -0.003, #very close/sketchy, hanging on by a thread
     }
+
+    self.whiteCaptureZone = [
+      ["Q", "p", "", ""],
+      ["", "", "", ""],
+      ["", "", "", ""],
+      ["", "", "", ""]
+    ]
+    self.blackCaptureZone = [
+      ["q", "p", "", ""],
+      ["", "", "", ""],
+      ["", "", "", ""],
+      ["", "", "", ""]
+    ]
+
+    self.turn = "White"
 
 
   def createSocket(self, port):
@@ -116,15 +139,54 @@ class Robot:
         board.push_san(command)
         printBoard()
 
-
+        self.turn = "Black"
         self.robotDecisionMaking()
 
 
+  def moveSequence(self, move):
+    # parsing algrebraic notation into two separate squares
+    # need to catch special moves like castling and promoting a piece.
+    pickupSquare = move[:2]
+    dropSquare = move[2:]
+
+    # x and y coordinate points of squares
+    pickupCoords = self.calculateSquareCoords(pickupSquare)
+    dropCoords = self.calculateSquareCoords(dropSquare)
+
+    if len(move) == 4: # normal moves ex:'e2e4'
+      # check if dropSquare is empty
+      pieceAtDropSquare = self.pieceAtSquare(dropSquare)
+      if pieceAtDropSquare:
+        self.capturePiece(dropCoords, pieceAtDropSquare)
+
+      # returns letter abreviation of pieces
+      pieceToPickup = self.pieceAtSquare(pickupSquare).lower()
+      print(utils.chessFuncs.squareIndex[dropSquare], utils.chessFuncs.squareIndex[dropSquare])
+      # go above the piece to be moved, then go down and pick it up
+      self.pickupOrDropSequence("pickup", pickupCoords[0], pickupCoords[1], self.getPieceHeight(pieceToPickup))
+
+      #move over to above the drop square, then go down and drop piece
+      self.pickupOrDropSequence("drop", dropCoords[0], dropCoords[1], self.getPieceHeight(pieceToPickup))
+
+
+    else: #castling, promotion, 
+      print("abnormal move handling", move)
+
+      # castling
+      if "O-O" in move:
+        self.castle(move)
+      elif "x" in move:
+        self.enPassant(move)
+      elif len(move) == 5:
+        self.promotionSequence(move)
+
+
+
   def pickupOrDropSequence(self, pickupOrDrop: str, newX:float, newY: float, pieceZHeight: float):
-    time.sleep(1)
+    time.sleep(2)
     # moves to above the desired square
     self.moveL(newX, newY, MAX_Z)
-    time.sleep(2)
+    time.sleep(2.5)
     #moves down to table, pieces height
     self.moveL(newX, newY, pieceZHeight)
     time.sleep(2)
@@ -137,14 +199,10 @@ class Robot:
         
     time.sleep(2)
     self.moveL(newX, newY, MAX_Z) # moves above squares
-    # time.sleep(.5)
+    time.sleep(.5)
 
 
-  def calculateNewSquareCoords(self, newSquare):
-    origin = [0.1215, 0.5125] # square 'a1' center coordinate points [x, y]
-    squareSizeX = 0.0385
-    squareSizeY = 0.0382
-    
+  def calculateSquareCoords(self, newSquare):
     # change the letters into alphabet number index to perform math scaling operation
     # represents the difference in # of squares to the a1 square
     xScale = utils.chessFuncs.rankToNumber(newSquare[0])
@@ -159,52 +217,110 @@ class Robot:
 
     return [newX, newY]
 
-
-  def moveSequence(self, move):
-    # parsing algrebraic notation into two separate squares
-    # need to catch special moves like castling and promoting a piece.
-    pickupSquare = move[:2]
-    dropSquare = move[2:]
-
-    # x and y coordinate points of squares
-    pickupCoords = self.calculateNewSquareCoords(pickupSquare)
-    dropCoords = self.calculateNewSquareCoords(dropSquare)
-
-    if len(move) == 4: # normal moves ex:'e2e4'
-      # check if dropSquare is empty
-      pieceAtDropSquare = self.pieceAtSquare(dropSquare)
-      if pieceAtDropSquare:
-        self.capturePiece(dropCoords, pieceAtDropSquare)
-
-      # returns letter abreviation of pieces
-      pieceToPickup = self.pieceAtSquare(pickupSquare)
-      print(utils.chessFuncs.squareIndex[dropSquare], utils.chessFuncs.squareIndex[dropSquare])
-      # go above the piece to be moved, then go down and pick it up
-      self.pickupOrDropSequence("pickup", pickupCoords[0], pickupCoords[1], self.getPieceHeight(pieceToPickup))
-
-      #move over to above the drop square, then go down and drop piece
-      self.pickupOrDropSequence("drop", dropCoords[0], dropCoords[1], self.getPieceHeight(pieceToPickup))
-
-
-    else: #castling, promotion, 
-      print("abnormal move handling", move)
-
   
-  def pieceAtSquare(self, algNotation: str) -> int:
+  def pieceAtSquare(self, algNotation: str) -> str:
     piece = board.piece_at(utils.chessFuncs.squareIndex[algNotation])
     if piece:
-      piece = piece.symbol().lower()
+      piece = piece.symbol()
     return piece
 
-  def capturePiece(self, pieceCoords: list[float], piece):
+
+  # piece not yet lowered, white are still capital letters
+  def capturePiece(self, pieceCoords: list[float], piece: str):
+    pieceLowercase = piece.lower()
     print(f"capturing {piece} at", pieceCoords)
 
-    self.pickupOrDropSequence("pickup", pieceCoords[0], pieceCoords[1], self.getPieceHeight(piece))
+    self.pickupOrDropSequence("pickup", pieceCoords[0], pieceCoords[1], self.getPieceHeight(pieceLowercase))
 
     # move piece off board
+    dropCoords = self.calculateCaptureZone(piece, "")
+    self.pickupOrDropSequence("drop", dropCoords[0], dropCoords[1], self.getPieceHeight(pieceLowercase))
+
+    # time.sleep(2)
+
+
+
+  def calculateCaptureZone(self, piece:str, searchFor:str) -> list[float]:
+    if piece.isupper():
+      print("white", piece)
+
+      xColScale, yRowScale = self.searchCaptureZone(self.whiteCaptureZone, piece, searchFor)
+
+      # change default indexes
+      xColScale += 9
+      yRowScale += 3
+
+      newX = origin[0] - (squareSizeX * xColScale)
+      newY = origin[1] - (squareSizeY * yRowScale)
+
+      return [newX, newY]
+    
+    if piece.islower():
+      print("black", piece)
+
+      xColScale, yRowScale = self.searchCaptureZone(self.blackCaptureZone, piece, searchFor)
+
+      # change default indexes
+      xColScale += 9 #white and black have same col index
+      yRowScale += 7
+
+      newX = origin[0] - (squareSizeX * xColScale)
+      newY = origin[1] - (squareSizeY * yRowScale)
+
+      return [newX, newY]
+      
+  # too search for empty spots in capture zone
+  # col = rank, row = file
+  def searchCaptureZone(self, captureZone: list[list[str]], piece: str, searchFor: str):
+    for row in range(len(captureZone)):
+      for col in range(len(captureZone[row])):
+        if captureZone[row][col] == searchFor:
+          print(row, col, captureZone[row][col])
+          # if capturing set empty spot to piece, if promoting set to empty
+          if captureZone[row][col] == "":
+            captureZone[row][col] = piece
+          else:
+            captureZone[row][col] = ""
+
+          print(captureZone)
+          return col, row
 
   def getPieceHeight(self, pieceAbbrev) -> float:
     return self.pieceHeights[pieceAbbrev]
+  
+  def enPassant(self, move: str):
+    print("en passant")
+
+  def castle(self, move:str):
+    if len(move) == 3:
+      print(self.turn, "kingside castle")
+    else:
+      print(self.turn, "queenside castle")
+
+  # A pawn moving from e7 to e8 and promoting to a queen would be notated as "e7e8q". 
+  def promotionSequence(self, move:str):
+    # ex: e7e8q -> e7 e8 q
+    pickupSquare = move[:2]
+    dropSquare = move[2:4]
+    promoteTo = move [4:]
+
+    pieceCoords = self.calculateSquareCoords(pickupSquare)
+    piece = self.pieceAtSquare(pickupSquare)
+    self.capturePiece(pieceCoords, piece)
+
+    # coords of piece in capture zone to be used in promotion
+    promoteToCoords = self.calculateCaptureZone(piece, promoteTo)
+    self.pickupOrDropSequence("pickup", promoteToCoords[0], promoteToCoords[1], self.getPieceHeight(promoteTo.lower()))
+
+    dropCoords = self.calculateSquareCoords(dropSquare)
+    self.pickupOrDropSequence("drop", dropCoords[0], dropCoords[1], self.getPieceHeight(promoteTo.lower()))
+
+    
+    
+
+  def promoteThisPiece(self, promoteTo: str):
+    {}
+    # search capture zone for piece, and pick up
 
   def robotDecisionMaking(self):
     # set stockfish board = pychess board then get bestmove
@@ -233,6 +349,7 @@ def main():
   printBoard()
 
   while True:
+    thisRobot.turn = "White"
     command = input("Enter newSquare (Example:'e2e4'):\n")
     thisRobot.receiveUserInput(command)
 
@@ -242,7 +359,7 @@ main()
 def testPieceHeight(z):
   thisRobot = Robot()
   # z = -0.003
-  x, y = thisRobot.calculateNewSquareCoords("a1")
+  x, y = thisRobot.calculateSquareCoords("a1")
   # basic up and down, comment x,yz out when failure to adjust
   thisRobot.moveL(x, y, 0.0)
   thisRobot.moveL(x, y, z)
@@ -260,9 +377,11 @@ def testPieceHeight(z):
 # testPieceHeight(-0.05)
 
 """
-create functionality to 
- - take piece off board
- - castle, promote pawn
+create functionality to:
+ - castle kingside: O-O queenside: O-O-O
+ - en passant
+ - promote piece (put piece in capture zone, search capture zone for queen and put in old place of pawn)
+ - promote and capture on same move
 """
 
 

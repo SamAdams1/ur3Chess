@@ -179,8 +179,8 @@ captured pieces zone: (16 zones needed, cant capture king but extra queen)
 ["","","","","",]]
 
 add to z -> move robot up
-add to  y -> move down number ~ square 8 -> 1
-add to x -> move up letter ~ squares h -> a
+add to  y -> move down number ~ square 8 -> 1 = file/row
+add to x -> move down letter ~ squares h -> a = rank/col
 '''
 """
 pseudocode:
