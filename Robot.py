@@ -22,8 +22,8 @@ stockfish.set_elo_rating(1000)
 import chess
 board = chess.Board()
 # board.set_board_fen("rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR") # test e4d5 pawn capture
-# board.set_board_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/R3KBNR") # White Queenside Castling
-board.set_board_fen("1nbqkbnr/Pppppppp/8/8/8/8/1PPPPPPP/RNBQKBNR") # e7 pawn promoting
+# board.set_board_fen("1nbqkbnr/Pppppppp/8/8/8/8/1PPPPPPP/RNBQKBNR") # e7 pawn promoting
+board.set_board_fen("r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R") # Castling
 
 
 class Robot:
@@ -131,7 +131,15 @@ class Robot:
     except:
       # Square commands in except loop
       # check input validity
-      if newSquare[0] not in letters or newSquare[1] not in numbers:
+      # castling
+      if "O-O" in command:
+        self.castle(command)
+      elif "x" in command:
+        self.enPassant(command)
+      elif len(command) == 5:
+        self.promotionSequence(command)
+      
+      elif newSquare[0] not in letters or newSquare[1] not in numbers:
         print("Invalid Square.\n")
       else:
         print("calculate:", command, new_line)
@@ -171,14 +179,6 @@ class Robot:
 
     else: #castling, promotion, 
       print("abnormal move handling", move)
-
-      # castling
-      if "O-O" in move:
-        self.castle(move)
-      elif "x" in move:
-        self.enPassant(move)
-      elif len(move) == 5:
-        self.promotionSequence(move)
 
 
 
@@ -292,10 +292,47 @@ class Robot:
     print("en passant")
 
   def castle(self, move:str):
+    self.turn = "Black"
+    kingPickupCoords, kingDropCoords = self.kingCastleCoords(move)
+    self.pickupOrDropSequence("pickup", kingPickupCoords[0], kingPickupCoords[1], self.getPieceHeight("p"))
+    self.pickupOrDropSequence("drop", kingDropCoords[0], kingDropCoords[1], self.getPieceHeight("p"))
+    
+    rookPickupCoords, rookDropCoords = self.rookCastleCoords(move)
+    self.pickupOrDropSequence("pickup", rookPickupCoords[0], rookPickupCoords[1], self.getPieceHeight("r"))
+    self.pickupOrDropSequence("drop", rookDropCoords[0], rookDropCoords[1], self.getPieceHeight("r"))
+    
+
+
+  def kingCastleCoords(self, move:str):
     if len(move) == 3:
       print(self.turn, "kingside castle")
+      if self.turn == "White":
+        return [self.calculateSquareCoords("e1"), self.calculateSquareCoords("g1")]
+      else: # black
+        return [self.calculateSquareCoords("e8"), self.calculateSquareCoords("g8")]
     else:
       print(self.turn, "queenside castle")
+      if self.turn == "White":
+        return [self.calculateSquareCoords("e1"), self.calculateSquareCoords("c1")]
+      else: # black
+        return [self.calculateSquareCoords("e8"), self.calculateSquareCoords("c8")]
+
+
+  def rookCastleCoords(self, move:str):
+    if len(move) == 3:
+      print(self.turn, "kingside castle")
+      if self.turn == "White":
+        return self.calculateSquareCoords("h1"), self.calculateSquareCoords("f1")
+      else: # black
+        return self.calculateSquareCoords("h8"), self.calculateSquareCoords("f8")
+    else:
+      print(self.turn, "queenside castle")
+      if self.turn == "White":
+        return self.calculateSquareCoords("a1"), self.calculateSquareCoords("d1")
+      else: # black
+        return self.calculateSquareCoords("a8"), self.calculateSquareCoords("d8")
+
+
 
   # A pawn moving from e7 to e8 and promoting to a queen would be notated as "e7e8q". 
   def promotionSequence(self, move:str):
@@ -315,13 +352,7 @@ class Robot:
     dropCoords = self.calculateSquareCoords(dropSquare)
     self.pickupOrDropSequence("drop", dropCoords[0], dropCoords[1], self.getPieceHeight(promoteTo.lower()))
 
-    
-    
-
-  def promoteThisPiece(self, promoteTo: str):
-    {}
-    # search capture zone for piece, and pick up
-
+  
   def robotDecisionMaking(self):
     # set stockfish board = pychess board then get bestmove
     stockfish.set_fen_position(board.fen())
@@ -353,34 +384,20 @@ def main():
     command = input("Enter newSquare (Example:'e2e4'):\n")
     thisRobot.receiveUserInput(command)
 
-# print(chess.B2, utils.chessFuncs.squareIndex["b2"])
 main()
 
 def testPieceHeight(z):
   thisRobot = Robot()
-  # z = -0.003
   x, y = thisRobot.calculateSquareCoords("a1")
   # basic up and down, comment x,yz out when failure to adjust
   thisRobot.moveL(x, y, 0.0)
   thisRobot.moveL(x, y, z)
 
-  # thisRobot.moveL(x, y, 0.0)
-  # time.sleep(.5)
-  # thisRobot.pickupOrDropSequence("pickup", x, y, z)
-  # time.sleep(1)
-  # thisRobot.moveL(x, y, MAX_Z)
-  # time.sleep(0.5)
-  # thisRobot.pickupOrDropSequence("drop", x, y, z)
-  # time.sleep(1)
-  # thisRobot.moveL(x, y, 0.0)
-
 # testPieceHeight(-0.05)
 
 """
 create functionality to:
- - castle kingside: O-O queenside: O-O-O
  - en passant
- - promote piece (put piece in capture zone, search capture zone for queen and put in old place of pawn)
  - promote and capture on same move
 """
 
