@@ -13,7 +13,7 @@ label.grid(row=1, column=0, columnspan=3)
 
 def updateImage():
   try: 
-    response = requests.get("http://10.20.59.14:4242/current.jpg?type=color")
+    response = requests.get("http://10.20.59.13:4242/current.jpg?type=color")
 
     global im, label
     im = ImageTk.PhotoImage(Image.open(BytesIO(response.content)))

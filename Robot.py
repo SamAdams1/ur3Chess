@@ -18,6 +18,9 @@ stockfish = Stockfish(path=r"C:\Users\adams\Downloads\stockfish-windows-x86-64-v
 stockfish.set_depth(20)
 stockfish.set_elo_rating(1000)
 
+
+# chesster
+
 # chess board
 import chess
 board = chess.Board()
@@ -28,7 +31,7 @@ board.set_board_fen("r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R") # Castling
 
 class Robot:
   def __init__(self):
-    self.ip = "10.20.59.12"
+    self.ip = "10.20.59.13"
     self.PRIMARY_PORT = 30001
     self.SECONDARY_PORT = 30002 # doubt i will use it
     self.REALTIME_PORT = 30003
@@ -36,8 +39,8 @@ class Robot:
     self.socket = self.createSocket(self.PRIMARY_PORT)
     self.realTimeSocket = self.createSocket(self.REALTIME_PORT)
 
-    self.a = "0.3" # robots max acceleration
-    self.v = "0.3" # robots max velocity
+    self.a = "0.7" # robots max acceleration
+    self.v = "0.7" # robots max velocity
 
     # relative zheight - pawn, rook, knight, bishop, queen, king
     self.pieceHeights = { # 0.05 IS THE MAX HEIGHT FOR Z WITHOUT CAUSING JOINT FAILURES
@@ -49,14 +52,23 @@ class Robot:
       "k": -0.003, #very close/sketchy, hanging on by a thread
     }
 
+    # self.pieceHeights = {
+    #   "p": -0.025,
+    #   "r": -0.025,
+    #   "n": -0.025, 
+    #   "b": -0.025,
+    #   "q": -0.025,
+    #   "k": -0.025, 
+    # }
+
     self.whiteCaptureZone = [
-      ["Q", "p", "", ""],
+      ["Q", "", "", ""],
       ["", "", "", ""],
       ["", "", "", ""],
       ["", "", "", ""]
     ]
     self.blackCaptureZone = [
-      ["q", "p", "", ""],
+      ["q", "", "", ""],
       ["", "", "", ""],
       ["", "", "", ""],
       ["", "", "", ""]
@@ -90,10 +102,6 @@ class Robot:
 
   def moveL(self, newX: float, newY: float, newZ: float):
     self.sendUrScript(f"movel(p[{newX}, {newY}, {newZ}, -3.14,0,0], a={self.a}, v={self.v})")
-  
-  def calculateZCoord(): # calc z coord based on height of the piece
-    {}
-
   
   def openGripper(self): # New Scale Precision Gripper
     with open("urScripts\openGripper.script", "r") as file:
@@ -179,7 +187,6 @@ class Robot:
 
     else: #castling, promotion, 
       print("abnormal move handling", move)
-
 
 
   def pickupOrDropSequence(self, pickupOrDrop: str, newX:float, newY: float, pieceZHeight: float):
@@ -288,11 +295,46 @@ class Robot:
   def getPieceHeight(self, pieceAbbrev) -> float:
     return self.pieceHeights[pieceAbbrev]
   
+  # dxc6 - white d5 pawn captures black pawn on c5 by moving to c6
   def enPassant(self, move: str):
+    # the piece capturing vs the piece being captured
+    capturingPieceSquare = move[0]
+    capturedPieceSquare = move[2]
+    newFile = move[3]
+    oldFile = int(newFile)
+
+    # To find old file:White subtracts 1 from file as it moves up board numbers, black opposite.
+    if self.turn == "White":
+      oldFile -= 1
+    else:
+      oldFile += 1
+    oldFile = str(oldFile)
+
+    # behind the captured piece. on captured pieces file. either + or - captured pieces rank
+    newSquare = capturedPieceSquare + newFile
+
+    # d and c become d5, c5
+    capturingPieceSquare += oldFile
+    capturedPieceSquare += oldFile
+    print(capturingPieceSquare, capturedPieceSquare, newFile, oldFile, newSquare)
+    
+    # move capturing piece to square behind the piece its taking.
+    capturingPieceSquareCoords = self.calculateSquareCoords(capturingPieceSquare)
+    newSquareCoords = self.calculateSquareCoords(newSquare)
+    self.pickupOrDropSequence("pickup", capturingPieceSquareCoords[0], capturingPieceSquareCoords[1], self.getPieceHeight("p"))
+    self.pickupOrDropSequence("drop", newSquareCoords[0], newSquareCoords[1], self.getPieceHeight("p"))
+
+    # move en passanted piece off board
+    capturedPieceSquareCoords = self.calculateSquareCoords(capturedPieceSquare)
+    piece = "p"
+    if self.turn == "White": # white needs uppercase P or will move to black capture zone.
+      piece.upper()
+    self.capturePiece(capturedPieceSquareCoords, piece)
+
     print("en passant")
 
   def castle(self, move:str):
-    self.turn = "Black"
+    # self.turn = "Black"
     kingPickupCoords, kingDropCoords = self.kingCastleCoords(move)
     self.pickupOrDropSequence("pickup", kingPickupCoords[0], kingPickupCoords[1], self.getPieceHeight("p"))
     self.pickupOrDropSequence("drop", kingDropCoords[0], kingDropCoords[1], self.getPieceHeight("p"))
@@ -393,12 +435,14 @@ def testPieceHeight(z):
   thisRobot.moveL(x, y, 0.0)
   thisRobot.moveL(x, y, z)
 
-# testPieceHeight(-0.05)
+# testPieceHeight(-0.025)
+# testPieceHeight(0.05)
 
 """
 create functionality to:
  - en passant
  - promote and capture on same move
+ - move gripper lower when move across board wiht no piece in gripper
 """
 
 
