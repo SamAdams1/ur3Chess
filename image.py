@@ -21,7 +21,7 @@ def updateImage():
   except Exception as e:
     print("error getting image from wrist", e)
 
-  root.after(100, updateImage)# updates image every n milliseconds after root.mainloop start
+  root.after(1000, updateImage)# updates image every n milliseconds after root.mainloop start
 
 
 root.after(10, updateImage) # starts loop that updates image

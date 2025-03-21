@@ -117,17 +117,19 @@ class Robot:
     match command:
       case "home":
         self.moveJ([-1.57,-1.57,0, -1.57,0,0]) # home
-      case "idle":
+      case "idle": # camera top position
         self.goToIdle()
       case "open":
         self.openGripper()
       case "close":
         self.closeGripper()
+  # rtde_c.moveJ(, vel, acc)
+
       case _:
         raise Exception()
       
   def goToIdle(self):
-    self.moveJ([-1.5589281,-1.424189,0.959931, -1.15192,-1.6350244,0]) # idle
+    self.moveJ([-1.9529297987567347, -1.3281212163022538, 0.5247171560870569, -1.320993722682335, -1.2840612570392054, -0.3136356512652796]) # home
   
 
   def receiveUserInput(self, command: str):
