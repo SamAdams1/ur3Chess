@@ -12,7 +12,7 @@ from robotConnection import rtde_r
 from robotConnection import vel
 from robotConnection import acc
 
-import utils
+# import utils
 
 #         x,      y
 origin = [0.1215, 0.5125] # square 'a1' center coordinate points

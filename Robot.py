@@ -42,6 +42,8 @@ class Robot:
     self.a = "0.7" # robots max acceleration
     self.v = "0.7" # robots max velocity
 
+    self.turn = "White"
+ 
     # relative zheight - pawn, rook, knight, bishop, queen, king
     self.pieceHeights = { # 0.05 IS THE MAX HEIGHT FOR Z WITHOUT CAUSING JOINT FAILURES
       "p": -0.05,
@@ -74,7 +76,6 @@ class Robot:
       ["", "", "", ""]
     ]
 
-    self.turn = "White"
 
 
   def createSocket(self, port):
@@ -103,6 +104,9 @@ class Robot:
   def moveL(self, newX: float, newY: float, newZ: float):
     self.sendUrScript(f"movel(p[{newX}, {newY}, {newZ}, -3.14,0,0], a={self.a}, v={self.v})")
   
+  def toolPosition(self):
+    self.sendUrScript(f"textmsg(get_actual_tcp_pose())")
+
   def openGripper(self): # New Scale Precision Gripper
     with open("urScripts\openGripper.script", "r") as file:
       openScript = file.read()
@@ -123,14 +127,21 @@ class Robot:
         self.openGripper()
       case "close":
         self.closeGripper()
+      case "view2":
+        self.moveJ([-1.57,-1.57,0, -1.57,0,0])
+      case "tool":
+        self.toolPosition()
+        
+
   # rtde_c.moveJ(, vel, acc)
 
       case _:
         raise Exception()
       
   def goToIdle(self):
-    self.moveJ([-1.9529297987567347, -1.3281212163022538, 0.5247171560870569, -1.320993722682335, -1.2840612570392054, -0.3136356512652796]) # home
-  
+    # self.moveJ([-1.9529297987567347, -1.3281212163022538, 0.5247171560870569, -1.320993722682335, -1.2840612570392054, -0.3136356512652796]) # old
+    self.moveJ([-0.031365223278582405, 0.47343343710963476, 0.3452903986634218, -2.601733652973133, -0.010490056035830142, 0.031669042078009475]) # new
+    # self.moveJ()
 
   def receiveUserInput(self, command: str):
     newSquare = list(command)

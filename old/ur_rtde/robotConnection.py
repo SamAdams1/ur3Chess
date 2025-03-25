@@ -15,7 +15,7 @@ rtde_frequency = 500.0
 dt = 1.0/rtde_frequency  # 2ms
 flags = RTDEControl.FLAG_VERBOSE | RTDEControl.FLAG_UPLOAD_SCRIPT
 ur_cap_port = 50002
-robot_ip = "10.20.59.12"
+robot_ip = "10.20.59.13"
 
 lookahead_time = 0.1
 gain = 600
