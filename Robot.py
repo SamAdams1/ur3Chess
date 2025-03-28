@@ -9,8 +9,8 @@ MAX_Z = 0.05
 
 # for calculating square positions
 origin = [0.1215, 0.5125] # square 'a1' center coordinate points [x, y]
-squareSizeX = 0.0385
-squareSizeY = 0.0382
+squareSizeX = 0.038
+squareSizeY = 0.038
 
 # chess engine
 from stockfish import Stockfish
@@ -24,9 +24,9 @@ stockfish.set_elo_rating(1000)
 # chess board
 import chess
 board = chess.Board()
-# board.set_board_fen("rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR") # test e4d5 pawn capture
+board.set_board_fen("rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR") # test e4d5 pawn capture
 # board.set_board_fen("1nbqkbnr/Pppppppp/8/8/8/8/1PPPPPPP/RNBQKBNR") # e7 pawn promoting
-board.set_board_fen("r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R") # Castling
+# board.set_board_fen("r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R") # Castling
 
 
 class Robot:
@@ -45,23 +45,23 @@ class Robot:
     self.turn = "White"
  
     # relative zheight - pawn, rook, knight, bishop, queen, king
-    self.pieceHeights = { # 0.05 IS THE MAX HEIGHT FOR Z WITHOUT CAUSING JOINT FAILURES
-      "p": -0.05,
-      "r": -0.04,
-      "n": -0.04, #cannot pick up due to weird shape
-      "b": -0.035,
-      "q": -0.02,
-      "k": -0.003, #very close/sketchy, hanging on by a thread
-    }
-
-    # self.pieceHeights = {
-    #   "p": -0.025,
-    #   "r": -0.025,
-    #   "n": -0.025, 
-    #   "b": -0.025,
-    #   "q": -0.025,
-    #   "k": -0.025, 
+    # self.pieceHeights = { # 0.05 IS THE MAX HEIGHT FOR Z WITHOUT CAUSING JOINT FAILURES
+    #   "p": -0.05,
+    #   "r": -0.04,
+    #   "n": -0.04, #cannot pick up due to weird shape
+    #   "b": -0.035,
+    #   "q": -0.02,
+    #   "k": -0.003, #very close/sketchy, hanging on by a thread
     # }
+
+    self.pieceHeights = {
+      "p": -0.025,
+      "r": -0.025,
+      "n": -0.025, 
+      "b": -0.025,
+      "q": -0.025,
+      "k": -0.025, 
+    }
 
     self.whiteCaptureZone = [
       ["Q", "", "", ""],
@@ -140,8 +140,8 @@ class Robot:
       
   def goToIdle(self):
     # self.moveJ([-1.9529297987567347, -1.3281212163022538, 0.5247171560870569, -1.320993722682335, -1.2840612570392054, -0.3136356512652796]) # old
-    self.moveJ([-0.031365223278582405, 0.47343343710963476, 0.3452903986634218, -2.601733652973133, -0.010490056035830142, 0.031669042078009475]) # new
-    # self.moveJ()
+    # self.moveJ([-0.031365223278582405, 0.47343343710963476, 0.3452903986634218, -2.601733652973133, -0.010490056035830142, 0.031669042078009475]) # new
+    self.moveJ([-1.90624861, -1.2788027, 0.50376348, -1.3528047, -1.3908529, -0.28363])
 
   def receiveUserInput(self, command: str):
     newSquare = list(command)

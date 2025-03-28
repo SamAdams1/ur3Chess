@@ -1,20 +1,22 @@
 def closeGripper():
   global _hidden_verificationVariable=0
-  step_count_c4f0b9d0_eefe_4a39_a36e_825a05d1c5ed = 0.0
-  thread Step_Counter_Thread_c66f4206_0cc5_4a71_ad4d_2d2ae8c94c7b():
+  step_count_940569f8_c832_4be8_859f_adae333720ab = 0.0
+  thread Step_Counter_Thread_abf051f0_2bcb_4900_b411_6a8eb06b279b():
     while (True):
-      step_count_c4f0b9d0_eefe_4a39_a36e_825a05d1c5ed = step_count_c4f0b9d0_eefe_4a39_a36e_825a05d1c5ed + 1.0
+      step_count_940569f8_c832_4be8_859f_adae333720ab = step_count_940569f8_c832_4be8_859f_adae333720ab + 1.0
       sync()
     end
   end
-  run Step_Counter_Thread_c66f4206_0cc5_4a71_ad4d_2d2ae8c94c7b()
-  set_gravity([0.0, 0.0, 9.82])
+  run Step_Counter_Thread_abf051f0_2bcb_4900_b411_6a8eb06b279b()
   set_safety_mode_transition_hardness(1)
+  set_target_payload(0.500000, [0.000000, 0.000000, 0.043000], [0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000])
+  set_gravity([0.0, 0.0, 9.82])
   set_tool_communication(True, 1000000, 0, 1, 1.0, 3.5)
   set_tool_output_mode(0)
   set_tool_digital_output_mode(0, 1)
   set_tool_digital_output_mode(1, 1)
   set_tool_voltage(24)
+  set_tcp(p[0.0,0.0,0.158,0.0,0.0,0.0])
   set_standard_analog_input_domain(0, 1)
   set_standard_analog_input_domain(1, 1)
   set_tool_analog_input_domain(0, 1)
@@ -22,15 +24,15 @@ def closeGripper():
   set_analog_outputdomain(0, 0)
   set_analog_outputdomain(1, 0)
   set_input_actions_to_default()
-  set_target_payload(0.500000, [0.000000, 0.000000, 0.043000], [0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000])
-  set_tcp(p[0.0,0.0,0.158,0.0,0.0,0.0])
+  global Pallet_1_cnt_2=1
+  global Pallet_1_cnt_1=1
   global Pallet_1_cnt=6
   global Cal_Blocks2=p[-0.00795671076279541,0.37973200424925146,-0.013530667582595636,2.3322093530425616,2.103697177353702,-0.0023699988579912326]
   global Cal_NH=p[-0.07841585594105527,-0.33455790121234164,-0.01903291648493184,3.1355124333738447,0.1686041135312996,-0.0010787314852892269]
   global Cal_S=p[-0.22503663890231873,-0.21738080341764968,-0.021343480013423795,1.2803350547354286,2.8687523583317796,-0.0026591802411976406]
   global Cal_U=p[0.09109005307871507,-0.3564824370978873,-0.019100356835412148,0.2749262786265504,-3.128796864206349,0.0023964474866253636]
   global Calib_2=p[-0.25093943985978634,-0.0054730037016401095,-0.012687205598757812,2.159440711426257,2.27491789895627,-0.009770987797238796]
-  global Calib_3=p[-0.2807935579049278,-0.2275602346847922,0.015428681910278378,3.1374618456345473,-0.022322263161035628,0.0030096279602934363]
+  global Calib_3=p[-0.2778342717074663,-0.2320780797027377,0.015452632210718234,3.137375917190303,-0.03282990820353711,0.0030308957393836065]
   global Plane_benchtop=p[-0.3686346629808861,-0.07321547165986228,-0.02330056514855794,6.435793307000821E-5,-9.116183399845811E-5,-1.5770375539662045]
   # begin: URCap Installation Node
   #   Source: External Control, 1.0.5, FZI Research Center for Information Technology
@@ -604,10 +606,10 @@ def closeGripper():
   xmlrpc_server=rpc_factory("xmlrpc","http://127.0.0.1:4242")
   
   # Open connection with visual offset monitor
-  cam_locate_monitor=rpc_factory("xmlrpc","http://127.0.0.1:35073")
+  cam_locate_monitor=rpc_factory("xmlrpc","http://127.0.0.1:42607")
   
   # Open connection with visual offset monitor
-  visual_offset_monitor=rpc_factory("xmlrpc","http://127.0.0.1:32867")
+  visual_offset_monitor=rpc_factory("xmlrpc","http://127.0.0.1:42399")
   
   #######Vision urcap preamble end##########
   ###########################################
