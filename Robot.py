@@ -8,7 +8,7 @@ letters = "abcdefgh"
 MAX_Z = 0.05
 
 # for calculating square positions
-origin = [0.1215, 0.5125] # square 'a1' center coordinate points [x, y]
+origin = [0.1215, 0.509] # square 'a1' center coordinate points [x, y]
 squareSizeX = 0.038
 squareSizeY = 0.038
 
@@ -24,9 +24,10 @@ stockfish.set_elo_rating(1000)
 # chess board
 import chess
 board = chess.Board()
-board.set_board_fen("rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR") # test e4d5 pawn capture
+# board.set_board_fen("rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR") # test e4d5 pawn capture
 # board.set_board_fen("1nbqkbnr/Pppppppp/8/8/8/8/1PPPPPPP/RNBQKBNR") # e7 pawn promoting
 # board.set_board_fen("r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R") # Castling
+board.set_board_fen("3qkbn1/4p3/8/8/8/8/4P3/3QKBNR") # waiting for prints
 
 
 class Robot:
@@ -39,8 +40,8 @@ class Robot:
     self.socket = self.createSocket(self.PRIMARY_PORT)
     self.realTimeSocket = self.createSocket(self.REALTIME_PORT)
 
-    self.a = "0.7" # robots max acceleration
-    self.v = "0.7" # robots max velocity
+    self.a = "0.3" # robots max acceleration
+    self.v = "0.3" # robots max velocity
 
     self.turn = "White"
  
@@ -53,14 +54,13 @@ class Robot:
     #   "q": -0.02,
     #   "k": -0.003, #very close/sketchy, hanging on by a thread
     # }
-
     self.pieceHeights = {
-      "p": -0.025,
-      "r": -0.025,
-      "n": -0.025, 
-      "b": -0.025,
-      "q": -0.025,
-      "k": -0.025, 
+      "p": -0.024,
+      "r": -0.024,
+      "n": -0.024, 
+      "b": -0.024,
+      "q": -0.024,
+      "k": -0.024, 
     }
 
     self.whiteCaptureZone = [
@@ -102,8 +102,11 @@ class Robot:
     self.sendUrScript(f"movej({jointPositions}, a={self.a}, v={self.v})")
 
   def moveL(self, newX: float, newY: float, newZ: float):
-    self.sendUrScript(f"movel(p[{newX}, {newY}, {newZ}, -3.14,0,0], a={self.a}, v={self.v})")
-  
+    # self.sendUrScript(f"movel(p[{newX}, {newY}, {newZ}, -3.14,0,1], a={self.a}, v={self.v})")
+    self.sendUrScript(f"movel(p[{newX}, {newY}, {newZ}, -2.9, 1.25, 0], a={self.a}, v={self.v})")
+    print(f"movel(p[{newX}, {newY}, {newZ}, -2.9, 1.25, 0], a={self.a}, v={self.v})")
+
+
   def toolPosition(self):
     self.sendUrScript(f"textmsg(get_actual_tcp_pose())")
 
@@ -131,9 +134,6 @@ class Robot:
         self.moveJ([-1.57,-1.57,0, -1.57,0,0])
       case "tool":
         self.toolPosition()
-        
-
-  # rtde_c.moveJ(, vel, acc)
 
       case _:
         raise Exception()
@@ -159,6 +159,8 @@ class Robot:
         self.enPassant(command)
       elif len(command) == 5:
         self.promotionSequence(command)
+      elif len(command) == 2:
+        self.goToSquare(command)
       
       elif newSquare[0] not in letters or newSquare[1] not in numbers:
         print("Invalid Square.\n")
@@ -170,6 +172,7 @@ class Robot:
 
         self.turn = "Black"
         self.robotDecisionMaking()
+        self.goToIdle()
 
 
   def moveSequence(self, move):
@@ -407,6 +410,13 @@ class Robot:
     dropCoords = self.calculateSquareCoords(dropSquare)
     self.pickupOrDropSequence("drop", dropCoords[0], dropCoords[1], self.getPieceHeight(promoteTo.lower()))
 
+  def goToSquare(self, square):
+    squareCoords = self.calculateSquareCoords(square)
+
+    if input("\nup or down\n") == "up":
+      self.moveL(squareCoords[0], squareCoords[1], MAX_Z)
+    else:
+      self.moveL(squareCoords[0], squareCoords[1], self.pieceHeights["p"] + 0.001)
   
   def robotDecisionMaking(self):
     # set stockfish board = pychess board then get bestmove
@@ -418,6 +428,28 @@ class Robot:
     printBoard()
     print(board.fen())
     print(bestMove)
+  
+  def testSquareCalib(self):
+    # goes up through A rank then down the files to test if squares are perfectly calculated
+    board.set_board_fen("8/8/8/8/8/8/8/R7") # waiting for prints
+
+    curLetter = letters[0] # a
+    i = 1
+    while i < 8:
+      move = curLetter + str(i) + curLetter + str(i+1)
+      self.moveSequence(move)
+      print(move)
+      i += 1
+
+    self.moveSequence("a8a1")
+
+    for index, _ in enumerate(letters[:-1]):
+      move = letters[index] + "1" + letters[index + 1] + "1"
+      print(move)
+      self.moveSequence(move)
+
+    
+      
 
 
 def printBoard():
@@ -433,7 +465,10 @@ def printBoard():
 def main():
   thisRobot = Robot()
   printBoard()
+  # thisRobot.sendUrScript(f"movel(p[-0.0305, 0.39849999999999997, -0.07, -3.14, 0.93721234, 0], a=0.3, v=0.3)")
+  # thisRobot.sendUrScript(f"movel(p[-0.0305, 0.39849999999999997, -0.07, -2.9, 1.25, 0], a=0.3, v=0.3)")
 
+  # thisRobot.testSquareCalib()
   while True:
     thisRobot.turn = "White"
     command = input("Enter newSquare (Example:'e2e4'):\n")
