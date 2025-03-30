@@ -425,7 +425,7 @@ class Robot:
   def goToSquare(self, square):
     squareCoords = self.calculateSquareCoords(square)
 
-    if input("\nup or down\n") == "u":
+    if input("\nup or down\n") == "up":
       self.moveL(squareCoords[0], squareCoords[1], MAX_Z)
     else:
       self.moveL(squareCoords[0], squareCoords[1], self.pieceHeights["p"] + 0.001)
