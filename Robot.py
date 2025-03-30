@@ -27,7 +27,9 @@ board = chess.Board()
 # board.set_board_fen("rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR") # test e4d5 pawn capture
 # board.set_board_fen("1nbqkbnr/Pppppppp/8/8/8/8/1PPPPPPP/RNBQKBNR") # e7 pawn promoting
 # board.set_board_fen("r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R") # Castling
-board.set_board_fen("3qkbn1/4p3/8/8/8/8/8/3QKBNR") # waiting for prints
+# board.set_board_fen("3qkbn1/4p3/8/8/8/8/8/3QKBNR") # waiting for prints
+board.set_board_fen("r7/1P6/8/8/8/8/8/8") # test simulataneous promotion and capture 
+
 
 
 class Robot:
@@ -266,7 +268,7 @@ class Robot:
     if piece.isupper():
       print("white", piece)
 
-      xColScale, yRowScale = self.searchCaptureZone(self.whiteCaptureZone, piece, searchFor)
+      xColScale, yRowScale = self.searchCaptureZone(self.whiteCaptureZone, piece, searchFor.upper())
 
       # change default indexes
       xColScale += 9
@@ -392,11 +394,21 @@ class Robot:
 
 
   # A pawn moving from e7 to e8 and promoting to a queen would be notated as "e7e8q". 
+  # capturing and promoting: "b7a8q"
   def promotionSequence(self, move:str):
     # ex: e7e8q -> e7 e8 q
     pickupSquare = move[:2]
     dropSquare = move[2:4]
     promoteTo = move [4:]
+
+    print(pickupSquare, dropSquare, promoteTo)
+
+    dropCoords = self.calculateSquareCoords(dropSquare)
+
+    #if capturing move to capture zone
+    pieceAtDropSquare = self.pieceAtSquare(dropSquare)
+    if pieceAtDropSquare:
+      self.capturePiece(dropCoords, pieceAtDropSquare)
 
     pieceCoords = self.calculateSquareCoords(pickupSquare)
     piece = self.pieceAtSquare(pickupSquare)
@@ -406,8 +418,9 @@ class Robot:
     promoteToCoords = self.calculateCaptureZone(piece, promoteTo)
     self.pickupOrDropSequence("pickup", promoteToCoords[0], promoteToCoords[1], self.getPieceHeight(promoteTo.lower()))
 
-    dropCoords = self.calculateSquareCoords(dropSquare)
+    # where placing promoted piece
     self.pickupOrDropSequence("drop", dropCoords[0], dropCoords[1], self.getPieceHeight(promoteTo.lower()))
+
 
   def goToSquare(self, square):
     squareCoords = self.calculateSquareCoords(square)
