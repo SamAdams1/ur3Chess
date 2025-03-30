@@ -27,7 +27,7 @@ board = chess.Board()
 # board.set_board_fen("rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR") # test e4d5 pawn capture
 # board.set_board_fen("1nbqkbnr/Pppppppp/8/8/8/8/1PPPPPPP/RNBQKBNR") # e7 pawn promoting
 # board.set_board_fen("r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R") # Castling
-board.set_board_fen("3qkbn1/4p3/8/8/8/8/4P3/3QKBNR") # waiting for prints
+board.set_board_fen("3qkbn1/4p3/8/8/8/8/8/3QKBNR") # waiting for prints
 
 
 class Robot:
@@ -40,8 +40,8 @@ class Robot:
     self.socket = self.createSocket(self.PRIMARY_PORT)
     self.realTimeSocket = self.createSocket(self.REALTIME_PORT)
 
-    self.a = "0.3" # robots max acceleration
-    self.v = "0.3" # robots max velocity
+    self.a = "0.7" # robots max acceleration
+    self.v = "0.7" # robots max velocity
 
     self.turn = "White"
  
@@ -84,7 +84,6 @@ class Robot:
       s.connect((self.ip, port))
   
       print(port, "Socket Connection Successful.")
-      # self.goToIdle()
       return s
     except:
       print(f"Error: {port} Socket Didn't Connect.")
@@ -102,8 +101,9 @@ class Robot:
     self.sendUrScript(f"movej({jointPositions}, a={self.a}, v={self.v})")
 
   def moveL(self, newX: float, newY: float, newZ: float):
-    # self.sendUrScript(f"movel(p[{newX}, {newY}, {newZ}, -3.14,0,1], a={self.a}, v={self.v})")
     self.sendUrScript(f"movel(p[{newX}, {newY}, {newZ}, -2.9, 1.25, 0], a={self.a}, v={self.v})")
+
+    # self.sendUrScript(f"movel(p[{newX}, {newY}, {newZ}, -3.14,0,1], a={self.a}, v={self.v})")
     print(f"movel(p[{newX}, {newY}, {newZ}, -2.9, 1.25, 0], a={self.a}, v={self.v})")
 
 
@@ -233,7 +233,6 @@ class Robot:
 
     # subtract 1 to make 0, if a1 is enter it will go back to origin
     yScale = int(newSquare[1]) - 1
-    # print("piece at:", newSquare, boardState[yScale][xScale])
 
     newX = origin[0] - (squareSizeX * xScale)
     newY = origin[1] - (squareSizeY * yScale)
@@ -413,7 +412,7 @@ class Robot:
   def goToSquare(self, square):
     squareCoords = self.calculateSquareCoords(square)
 
-    if input("\nup or down\n") == "up":
+    if input("\nup or down\n") == "u":
       self.moveL(squareCoords[0], squareCoords[1], MAX_Z)
     else:
       self.moveL(squareCoords[0], squareCoords[1], self.pieceHeights["p"] + 0.001)
@@ -450,23 +449,39 @@ class Robot:
 
     
       
+def saveFen():
+  with open("fen.txt", "w") as file:
+    fen = board.fen().split(" ")[0]
+    file.write(fen)
 
+def getFen():
+  try:
+    f = open("fen.txt", "r")
+    return f.read()
+  except:
+    print("No saved board fen.")
 
 def printBoard():
+  saveFen()
+
   print("   A B C D E F G H")
   print("   _______________")
   for rank, row in zip(range(8,0,-1), str(board).split("\n")):
       print(f"{rank} |{row}| {rank}")  # Add rank labels to each row
   print("   _______________")
   print("   A B C D E F G H")
-  print("\n")
 
 
 def main():
   thisRobot = Robot()
+
+  # get past fen incase of socket connection error
+  fen = getFen()
+  if fen:
+    if input(f"\nResume past saved game?\n{fen}\ny - n\n") == "y":
+      board.set_board_fen(fen)
+
   printBoard()
-  # thisRobot.sendUrScript(f"movel(p[-0.0305, 0.39849999999999997, -0.07, -3.14, 0.93721234, 0], a=0.3, v=0.3)")
-  # thisRobot.sendUrScript(f"movel(p[-0.0305, 0.39849999999999997, -0.07, -2.9, 1.25, 0], a=0.3, v=0.3)")
 
   # thisRobot.testSquareCalib()
   while True:
@@ -488,9 +503,11 @@ def testPieceHeight(z):
 
 """
 create functionality to:
- - en passant
  - promote and capture on same move
- - move gripper lower when move across board wiht no piece in gripper
+ - move gripper lower when move across board with no piece in gripper
+
+solve socket disconnecting problem
+
 """
 
 
