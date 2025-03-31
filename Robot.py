@@ -34,7 +34,8 @@ board.set_board_fen("r7/1P6/8/8/8/8/8/8") # test simulataneous promotion and cap
 
 class Robot:
   def __init__(self):
-    self.ip = "10.20.59.13"
+    # self.ip = "10.20.59.13"
+    self.ip = "192.168.1.2"
     self.PRIMARY_PORT = 30001
     self.SECONDARY_PORT = 30002 # doubt i will use it
     self.REALTIME_PORT = 30003
@@ -350,7 +351,11 @@ class Robot:
 
     print("en passant")
 
+  def promotionSequence(self, move:str):           {}
+  def enPassant(self, move: str):                  {}
   def castle(self, move:str):
+  
+  
     # self.turn = "Black"
     kingPickupCoords, kingDropCoords = self.kingCastleCoords(move)
     self.pickupOrDropSequence("pickup", kingPickupCoords[0], kingPickupCoords[1], self.getPieceHeight("p"))
@@ -425,7 +430,8 @@ class Robot:
   def goToSquare(self, square):
     squareCoords = self.calculateSquareCoords(square)
 
-    if input("\nup or down\n") == "up":
+    upDown = input("\nup or down\n")
+    if upDown == "up" or upDown == "u":
       self.moveL(squareCoords[0], squareCoords[1], MAX_Z)
     else:
       self.moveL(squareCoords[0], squareCoords[1], self.pieceHeights["p"] + 0.001)
@@ -524,3 +530,4 @@ solve socket disconnecting problem
 """
 
 
+# light +
