@@ -6,7 +6,7 @@ from PIL import Image, ImageTk
 
 root = Tk()
 root.title("Live Robot Feed")
-root.geometry("800x700")
+root.geometry("600x500")
 
 label = Label()
 label.grid(row=1, column=0, columnspan=3)

@@ -8,7 +8,7 @@ letters = "abcdefgh"
 MAX_Z = 0.05
 
 # for calculating square positions
-origin = [0.1215, 0.509] # square 'a1' center coordinate points [x, y]
+origin = [0.117, 0.504] # square 'a1' center coordinate points [x, y]
 squareSizeX = 0.038
 squareSizeY = 0.038
 
@@ -104,10 +104,16 @@ class Robot:
     self.sendUrScript(f"movej({jointPositions}, a={self.a}, v={self.v})")
 
   def moveL(self, newX: float, newY: float, newZ: float):
-    self.sendUrScript(f"movel(p[{newX}, {newY}, {newZ}, -2.9, 1.25, 0], a={self.a}, v={self.v})")
+    movel = f"movel(p[{newX}, {newY}, {newZ}, -2.9, 1.2, 0], a={self.a}, v={self.v})"
+    self.sendUrScript(movel)
 
     # self.sendUrScript(f"movel(p[{newX}, {newY}, {newZ}, -3.14,0,1], a={self.a}, v={self.v})")
-    print(f"movel(p[{newX}, {newY}, {newZ}, -2.9, 1.25, 0], a={self.a}, v={self.v})")
+    print(movel)
+
+  
+  def moveLPicAngle(self, newX: float, newY: float):
+    # self.sendUrScript(f"movel(p[{newX}, {newY}, , -2.06716797, -1.3604842, 5.8850757], a={self.a}, v={self.v})")
+    self.sendUrScript(f"movel(p[{newX}, {newY}, -0.22368, 2.409, -2.436, 0.671], a={self.a}, v={self.v})")
 
 
   def toolPosition(self):
@@ -137,14 +143,14 @@ class Robot:
         self.moveJ([-1.57,-1.57,0, -1.57,0,0])
       case "tool":
         self.toolPosition()
+      case "cam":
+        self.q1Pic()
 
       case _:
         raise Exception()
       
-  def goToIdle(self):
-    # self.moveJ([-1.9529297987567347, -1.3281212163022538, 0.5247171560870569, -1.320993722682335, -1.2840612570392054, -0.3136356512652796]) # old
-    # self.moveJ([-0.031365223278582405, 0.47343343710963476, 0.3452903986634218, -2.601733652973133, -0.010490056035830142, 0.031669042078009475]) # new
-    self.moveJ([-1.90624861, -1.2788027, 0.50376348, -1.3528047, -1.3908529, -0.28363])
+  def goToIdle(self): # do not change, will mess up computer vision cropping
+    self.moveJ([-1.89, -1.26, 0.505, -1.3528047, -1.3908529, -0.28363])
 
   def receiveUserInput(self, command: str):
     newSquare = list(command)
@@ -434,7 +440,7 @@ class Robot:
     if upDown == "up" or upDown == "u":
       self.moveL(squareCoords[0], squareCoords[1], MAX_Z)
     else:
-      self.moveL(squareCoords[0], squareCoords[1], self.pieceHeights["p"] + 0.001)
+      self.moveL(squareCoords[0], squareCoords[1], self.pieceHeights["p"] + 0.002)
   
   def robotDecisionMaking(self):
     # set stockfish board = pychess board then get bestmove
@@ -455,6 +461,7 @@ class Robot:
     i = 1
     while i < 8:
       move = curLetter + str(i) + curLetter + str(i+1)
+      board.push_san(move)
       self.moveSequence(move)
       print(move)
       i += 1
@@ -465,6 +472,13 @@ class Robot:
       move = letters[index] + "1" + letters[index + 1] + "1"
       print(move)
       self.moveSequence(move)
+
+  def q1Pic(self):
+    newX = origin[0] - (squareSizeX - (squareSizeX / 2))
+    newY = origin[1] - (squareSizeY - (squareSizeY / 2))
+
+    self.moveLPicAngle(newX, newY)
+    
 
     
       
@@ -490,6 +504,10 @@ def printBoard():
   print("   _______________")
   print("   A B C D E F G H")
 
+def testOrigin():
+  thisRobot = Robot()
+  thisRobot.moveL(origin[0], origin[1], -0.023)
+
 
 def main():
   thisRobot = Robot()
@@ -508,7 +526,10 @@ def main():
     command = input("Enter newSquare (Example:'e2e4'):\n")
     thisRobot.receiveUserInput(command)
 
-main()
+# main()
+# testOrigin()
+thisRobot = Robot()
+thisRobot.goToIdle()
 
 def testPieceHeight(z):
   thisRobot = Robot()
